@@ -2,6 +2,7 @@ import pytest
 from src.error import InputError, AccessError
 from src.admin import permission_change
 from src.auth import auth_register, auth_logout
+from src.global_variables import get_users
 
 @pytest.fixture
 def new_user():
@@ -44,11 +45,19 @@ def test_invalid_user(new_user):
     with pytest.raises(InputError):
         permission_change(new_user['token'], -1, 1)
 
-def test_member_becoming_owner():
-    pass   
+def test_member_becoming_owner(new_user, new_user_2):
+    '''tests that a user is given owner permissions by another owner'''
+    permission_change(new_user['token'],new_user_2['u_id'], 1)
+    assert get_users()[new_user_2['u_id']]['is_owner'] == True   
 
-def test_owner_becoming_member():
-    pass   
+def test_owner_becoming_member(new_user, new_user_2):
+    '''tests that an owner loses owner permissions and becomes a normal user'''
+    permission_change(new_user['token'],new_user_2['u_id'], 1)
+    assert get_users()[new_user_2['u_id']]['is_owner'] == True
+    permission_change(new_user['token'],new_user_2['u_id'], 2)
+    assert get_users()[new_user_2['u_id']]['is_owner'] == False 
 
-def test_no_permission_change():
-    pass
+def test_no_permission_change(new_user, new_user_2):
+    '''tests that permissions don't change if a member is 'given' member permissions'''
+    permission_change(new_user['token'],new_user_2['u_id'], 2)
+    assert get_users()[new_user_2['u_id']]['is_owner'] == False
