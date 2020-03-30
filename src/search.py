@@ -1,6 +1,6 @@
-from global_variables import get_channels
-from utils import check_token
-from channels import channels_list
+from src.global_variables import get_channels
+from src.utils import check_token
+from src.channels import channels_list
 
 
 def search(token, query_str):
