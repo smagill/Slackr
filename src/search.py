@@ -15,5 +15,5 @@ def search(token, query_str):
             message = messages[id_message]['message']
             if query_str in message:
                 search_results.append(message)
-
+    search_results.sort(key=message['time_created'])
     return search_results
