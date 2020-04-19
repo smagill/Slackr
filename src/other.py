@@ -2,25 +2,22 @@
 Contains miscellaneous functions
 '''
 from src.global_variables import get_users, get_channels
-from src.utils import check_token, set_reacted_messages
+from src.utils import check_token, set_reacted_messages, get_user_information
 from src.channel import is_user_a_member
 
 
 def users_all(token):
-    '''
-    Returns a list of all users
-        each user is a dictionary contains types u_id, email, name_first, name_last, handle_str
+    '''Returns a list of all users
+
+    :param token: jwt token
+    :type token: str
+    :return: contains u_id, email, name_first, name_last, handle_str for each user
+    :rtype: dict
     '''
     check_token(token)
     users = get_users()
     return {
-        'users': [{
-            'u_id': user_id,
-            'email': users[user_id]['email'],
-            'name_first': users[user_id]['name_first'],
-            'name_last': users[user_id]['name_last'],
-            'handle_str': users[user_id]['handle_str']
-        } for user_id in users],
+        'users': [get_user_information(user_id) for user_id in users],
     }
 
 

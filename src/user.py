@@ -1,66 +1,56 @@
 '''
 Allows users to edit and set their profile information
 '''
-import re
 import requests
 from PIL import Image
-from src.utils import check_token, generate_random_string
+from src.utils import check_token, generate_random_string, get_user_information
+from src.auth_helper import is_handle_unique, is_email_valid, id_from_email
 from src.error import InputError
 from src.global_variables import get_users
 
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 def is_valid_handle(host_user_id, handle_str):
+    '''Checks that handle_str is valid and not being used by any other user
+
+    :param host_user_id: Id of the user changing their handle
+    :type host_user_id: int
+    :param handle_str: User's new handle
+    :type handle_str: str
+    :return: True if the new handle_str is the same as the old, or if it is both valid AND unique.
+    :rtype: bool
     '''
-    checks that no existing user has this handle_str
-    '''
-    if len(handle_str) < 3 or len(handle_str) > 20:
-        return False
     users = get_users()
     if users[host_user_id]['handle_str'] == handle_str:
         return True
-    for user_id in users:
-        if users[user_id]['handle_str'] == handle_str:
-            return False
-    return True
+    return is_handle_unique(handle_str) and len(handle_str) >= 2 and len(handle_str) <= 20
 
+def is_new_email(host_user_id, email):
+    '''Checks that email is valid and not being used by any other user
 
-def is_valid_email(host_user_id, email):
+    :param host_user_id: Id of the user changing their email
+    :type host_user_id: int
+    :param email: User's new email
+    :type email: str
+    :return: True if the new email is the same as the old, or if the email is both valid AND unique.
+    :return: False, Otherwise
+    :rtype: bool
     '''
-    code from https://www.geeksforgeeks.org/check-if-email-address-valid-or-not-in-python/
-    checks that the valid is in a valid format according to geeks for geeks
-    and checks that this email is not already in use
-    '''
-    regex = r'^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$'
-    if not re.search(regex, email):
-        return False
-    users = get_users()
-    if users[host_user_id]['email'] == email:
-        return True
-    for user_id in users:
-        if users[user_id]['email'] == email:
-            return False
-    return True
-
+    email_id = id_from_email(email)
+    return email_id == host_user_id or (is_email_valid(email) and email_id is None)
 
 def user_profile(token, user_id):
-    '''
-    fetches a user profile, any valid user is able to do this
+    '''finds and returns a user profile
+
+    :param token: jwt token
+    :type token: str
+    :param user_id: id corresponding to the target user
+    :type user_id: int
+    :return: contains u_id, email, name_first, name_last, handle_str
+    :rtype: dict
     '''
     check_token(token)
-    users = get_users()
-    if not user_id in users:
-        raise InputError
-    user = users[user_id]
-    return {
-        'user': {
-            'u_id': user_id,
-            'email': user['email'],
-            'name_first': user['name_first'],
-            'name_last': user['name_last'],
-            'handle_str': user['handle_str'],
-            'profile_img_url': user['profile_img_url']
-        }
-   }
+    return {'user': get_user_information(user_id)}
 
 
 def user_profile_setname(token, name_first, name_last):
@@ -87,7 +77,7 @@ def user_profile_setemail(token, email):
     Update the authorised user's email address
     '''
     user_id = check_token(token)
-    if not is_valid_email(user_id, email):
+    if not is_new_email(user_id, email):
         raise InputError
 
     user = get_users()[user_id]
@@ -111,7 +101,7 @@ def user_profile_sethandle(token, handle_str):
     return {}
 
 
-def user_profile_setimage(token, img_url, x_start, y_start, x_end, y_end):
+def user_profile_setimage(token, img_url, x_start, y_start, x_end, y_end): #pylint: disable=too-many-arguments
     '''
     Update the authorised user's display photo
     Downloads the given img_url into the server folder 'images'
@@ -119,7 +109,6 @@ def user_profile_setimage(token, img_url, x_start, y_start, x_end, y_end):
     :param token:
     :type token: string
     '''
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
     user_id = check_token(token)
     user = get_users()[user_id]
 
@@ -148,4 +137,3 @@ def user_profile_setimage(token, img_url, x_start, y_start, x_end, y_end):
 
     user['profile_img_url'] = f'/imgurl/{new_file_name}'
     return {}
-
